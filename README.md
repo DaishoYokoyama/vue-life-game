@@ -1,6 +1,6 @@
 # vue-life-game
 
-# Demo Site
+# Demo
 
 https://vue-life-game-demo.netlify.com/
 
