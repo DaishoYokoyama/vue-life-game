@@ -1,30 +1,67 @@
 <template>
-    <div id="app">
-        <div class="field"
-             :style="fieldStyle">
-            <div v-for="(cell, i) in cells"
-                 :key="i"
-                 class="cell"
-                 :style="cellStyle">
-            </div>
-        </div>
+  <div id="app">
+    <button class="toggle-button"
+            @click.stop="toggleIsRun()">
+      {{ toggleButtonText }}
+    </button>
+    <div class="field"
+         :style="fieldStyle">
+      <div v-for="(cell, i) in cells"
+           :key="i"
+           :style="cellStyle"
+           class="cell"
+           :class="{ 'is-alive': cell.isAlive }"
+           @click.stop="toggleCell(cell)" />
     </div>
+  </div>
 </template>
 
 <script>
-import _ from 'lodash';
+import keyBy from 'lodash/keyBy';
+import { calcNextGen } from './util';
+
+function getRandomIntInclusive(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min; //The maximum is inclusive and the minimum is inclusive
+}
 
 export default {
     name: 'app',
     data() {
         return {
-            cellSize: 20,
-            rowCount: 15,
-            colCount: 15,
+            isRun: false,
+            cellSize: 10,
+            rowCount: 50,
+            colCount: 50,
             cells: [],
         };
     },
+    methods: {
+        toggleIsRun() {
+            this.isRun = !this.isRun;
+
+            if (this.isRun) {
+                this.next();
+            }
+        },
+        toggleCell(cell) {
+            const target = this.cells.find(
+                c => c.row === cell.row && c.col === cell.col
+            );
+            target.isAlive = !target.isAlive;
+        },
+        async next() {
+            this.cells = calcNextGen(this.cellDict);
+            if (this.isRun) {
+                requestAnimationFrame(() => this.next());
+            }
+        },
+    },
     computed: {
+        toggleButtonText() {
+            return this.isRun ? 'stop' : 'start';
+        },
         fieldStyle() {
             return {
                 width: `${this.colCount * this.cellSize}px`,
@@ -35,13 +72,27 @@ export default {
             const size = `${this.cellSize}px`;
             return { width: size, height: size };
         },
+        cellDict() {
+            return keyBy(this.cells, cell => `${cell.row},${cell.col}`);
+        },
     },
     created() {
-        _.forEach(_.range(this.rowCount), row => {
-            _.forEach(_.range(this.colCount), col => {
-                this.cells.push({ row, col, isAlive: false });
-            });
-        });
+        const { rowCount, colCount } = this;
+        for (let row = 0; row < rowCount; row += 1) {
+            for (let col = 0; col < colCount; col += 1) {
+                this.cells.push({
+                    row,
+                    col,
+                    isAlive: getRandomIntInclusive(0, 10) === 10,
+                    adjoin: {
+                        top: row !== 0,
+                        left: col !== 0,
+                        bottom: row !== rowCount - 1,
+                        right: col !== colCount - 1,
+                    },
+                });
+            }
+        }
     },
 };
 </script>
@@ -61,16 +112,40 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     color: #5f5f5f;
+    background: #fefefe;
 
     width: 100%;
     height: 100%;
 
     position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
 
+    > .toggle-button {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+
+        width: 50px;
+        height: 50px;
+        border: none;
+        border-radius: 50%;
+        box-shadow: 0px 0px 6px 3px rgba(0, 0, 0, 0.15);
+
+        transition: all 0.1s ease-out;
+
+        &:hover {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        &:focus {
+            outline: none;
+        }
+    }
+
     > .field {
+        background: #ffffff;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
         display: flex;
         flex-wrap: wrap;
@@ -79,6 +154,12 @@ body {
             border-right: 1px solid #dfdfdf;
             border-bottom: 1px solid #dfdfdf;
             border-collapse: collapse;
+
+            will-change: background;
+
+            &.is-alive {
+                background: #2f2f2f;
+            }
         }
     }
 }
