@@ -1,9 +1,16 @@
 <template>
   <div id="app">
-    <button class="toggle-button"
-            @click.stop="toggleIsRun()">
-      {{ toggleButtonText }}
-    </button>
+    <div class="menu">
+      <button class="rest-button"
+              @click.stop="setRandomCells()">
+        reset
+      </button>
+      <button class="toggle-button"
+              :class="{'is-running': isRun }"
+              @click.stop="toggleIsRun()">
+        {{ toggleButtonText }}
+      </button>
+    </div>
     <div class="field"
          :style="fieldStyle">
       <div v-for="(cell, i) in cells"
@@ -23,7 +30,7 @@ import { calcNextGen } from './util';
 function getRandomIntInclusive(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1)) + min; //The maximum is inclusive and the minimum is inclusive
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 export default {
@@ -51,6 +58,26 @@ export default {
             );
             target.isAlive = !target.isAlive;
         },
+        setRandomCells() {
+            const newCells = [];
+            const { rowCount, colCount } = this;
+            for (let row = 0; row < rowCount; row += 1) {
+                for (let col = 0; col < colCount; col += 1) {
+                    newCells.push({
+                        row,
+                        col,
+                        isAlive: getRandomIntInclusive(0, 10) === 10,
+                        adjoin: {
+                            top: row !== 0,
+                            left: col !== 0,
+                            bottom: row !== rowCount - 1,
+                            right: col !== colCount - 1,
+                        },
+                    });
+                }
+            }
+            this.cells = newCells;
+        },
         async next() {
             this.cells = calcNextGen(this.cellDict);
             if (this.isRun) {
@@ -77,22 +104,7 @@ export default {
         },
     },
     created() {
-        const { rowCount, colCount } = this;
-        for (let row = 0; row < rowCount; row += 1) {
-            for (let col = 0; col < colCount; col += 1) {
-                this.cells.push({
-                    row,
-                    col,
-                    isAlive: getRandomIntInclusive(0, 10) === 10,
-                    adjoin: {
-                        top: row !== 0,
-                        left: col !== 0,
-                        bottom: row !== rowCount - 1,
-                        right: col !== colCount - 1,
-                    },
-                });
-            }
-        }
+        this.setRandomCells();
     },
 };
 </script>
@@ -123,24 +135,59 @@ body {
     align-items: center;
     justify-content: center;
 
-    > .toggle-button {
-        position: absolute;
+    > .menu {
+        position: fixed;
         right: 10px;
         bottom: 10px;
 
-        width: 50px;
-        height: 50px;
-        border: none;
-        border-radius: 50%;
-        box-shadow: 0px 0px 6px 3px rgba(0, 0, 0, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
 
-        transition: all 0.1s ease-out;
+        > .toggle-button {
+            width: 50px;
+            height: 50px;
+            background-color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0px 0px 6px 3px rgba(0, 0, 0, 0.15);
 
-        &:hover {
-            background: rgba(0, 0, 0, 0.2);
+            transition: background-color 0.1s ease-out, color 0.1s ease-out;
+
+            &:hover {
+                background-color: rgba(0, 0, 0, 0.2);
+            }
+            &:focus {
+                outline: none;
+            }
+            &.is-running {
+                background-color: #1f1f1f;
+                color: #efefef;
+            }
         }
-        &:focus {
-            outline: none;
+
+        > .rest-button {
+            width: 30px;
+            height: 30px;
+            margin-bottom: 10px;
+            font-size: 8px;
+            background-color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: 0px 0px 6px 3px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            transition: background-color 0.1s ease-out, color 0.1s ease-out;
+
+            &:hover {
+                background-color: rgba(0, 0, 0, 0.2);
+            }
+            &:focus {
+                outline: none;
+            }
         }
     }
 
@@ -155,10 +202,15 @@ body {
             border-bottom: 1px solid #dfdfdf;
             border-collapse: collapse;
 
-            will-change: background;
+            will-change: background-color;
+            transition: background-color 0.25s ease-out;
+
+            &:hover {
+                background-color: #5f5f5f;
+            }
 
             &.is-alive {
-                background: #2f2f2f;
+                background-color: #2f2f2f;
             }
         }
     }
